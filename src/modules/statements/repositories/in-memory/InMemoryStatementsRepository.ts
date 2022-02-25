@@ -1,7 +1,8 @@
-import { Statement } from "../../entities/Statement";
+import { OperationType, Statement } from "../../entities/Statement";
 import { ICreateStatementDTO } from "../../useCases/createStatement/ICreateStatementDTO";
 import { IGetBalanceDTO } from "../../useCases/getBalance/IGetBalanceDTO";
 import { IGetStatementOperationDTO } from "../../useCases/getStatementOperation/IGetStatementOperationDTO";
+import { ITransferBalanceDTO } from "../../useCases/transferBalance/ITransferBalanceDTO";
 import { IStatementsRepository } from "../IStatementsRepository";
 
 export class InMemoryStatementsRepository implements IStatementsRepository {
@@ -17,35 +18,66 @@ export class InMemoryStatementsRepository implements IStatementsRepository {
     return statement;
   }
 
-  async findStatementOperation({ statement_id, user_id }: IGetStatementOperationDTO): Promise<Statement | undefined> {
-    return this.statements.find(operation => (
-      operation.id === statement_id &&
-      operation.user_id === user_id
-    ));
+  async findStatementOperation({
+    statement_id,
+    user_id,
+  }: IGetStatementOperationDTO): Promise<Statement | undefined> {
+    return this.statements.find(
+      (operation) =>
+        operation.id === statement_id && operation.user_id === user_id
+    );
   }
 
-  async getUserBalance({ user_id, with_statement = false }: IGetBalanceDTO):
-    Promise<
-      { balance: number } | { balance: number, statement: Statement[] }
-    >
-  {
-    const statement = this.statements.filter(operation => operation.user_id === user_id);
+  async getUserBalance({
+    user_id,
+    with_statement = false,
+  }: IGetBalanceDTO): Promise<
+    { balance: number } | { balance: number; statement: Statement[] }
+  > {
+    const statement = this.statements.filter(
+      (operation) =>
+        operation.user_id === user_id || operation.sender_id === user_id
+    );
 
     const balance = statement.reduce((acc, operation) => {
-      if (operation.type === 'deposit') {
+      if (
+        operation.type === "deposit" ||
+        (operation.type === "transfer" && operation.user_id === user_id)
+      ) {
         return acc + operation.amount;
       } else {
         return acc - operation.amount;
       }
-    }, 0)
+    }, 0);
 
     if (with_statement) {
       return {
         statement,
-        balance
-      }
+        balance,
+      };
     }
 
-    return { balance }
+    return { balance };
+  }
+
+  async transferBalance({
+    amount,
+    description,
+    user_id,
+    sender_id,
+  }: ITransferBalanceDTO): Promise<Statement> {
+    const statement = new Statement();
+
+    Object.assign(statement, {
+      amount,
+      description,
+      user_id,
+      sender_id,
+      type: OperationType.TRANSFER,
+    });
+
+    this.statements.push(statement);
+
+    return statement;
   }
 }
