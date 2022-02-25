@@ -2,17 +2,13 @@ import { v4 as uuidv4 } from "uuid";
 
 import { AppError } from "../../../../shared/errors/AppError";
 import { InMemoryUsersRepository } from "../../../users/repositories/in-memory/InMemoryUsersRepository";
+import { OperationType } from "../../entities/Statement";
 import { InMemoryStatementsRepository } from "../../repositories/in-memory/InMemoryStatementsRepository";
 import { CreateStatementUseCase } from "./CreateStatementUseCase";
 
 let createStatementUseCase: CreateStatementUseCase;
 let inMemoryStatementsRepository: InMemoryStatementsRepository;
 let inMemoryUsersRepository: InMemoryUsersRepository;
-
-enum OperationType {
-  DEPOSIT = "deposit",
-  WITHDRAW = "withdraw",
-}
 
 describe("Create Statement", () => {
   beforeEach(() => {
